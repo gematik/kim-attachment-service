@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kas</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body class="bg-dark">
+<div class="container text-light">
+  <h1 class="m-5">Hello to KAS</h1>
+</div>
+
+<div class="container text-light">
+  <h2 class="m-5">Swagger-ui</h2>
+</div>
+
+<div class="container">
+  <div class="p-3">
+    <a href="/swagger-ui.html" class="btn btn-primary p-3 align-content-center" style="width: 250px">Try me ;)</a>
+  </div>
+</div>
+
+<div class="container text-light">
+  <h2 class="m-5">Or get an overview about my performance</h2>
+</div>
+
+<div class="d-flex d-block flex-wrap container" id="endpoints">
+</div>
+
+<div class="text-light" id="env">
+</div>
+
+<div class="text-light" id="metrics">
+</div>
+
+</body>
+
+<script>
+
+  getEndpoints().then(res => showLinks(res));
+
+  async function getEndpoints() {
+    let response;
+    try{
+      response = await fetch("https://localhost:8443/actuator");
+    } catch (e){
+      response = await fetch("http://localhost:8080/actuator");
+    }
+    let result = await response.json();
+    let links = Object.entries(result._links);
+    return links
+  }
+
+  function showLinks(links) {
+    let endpointContainer = document.getElementById("endpoints");
+
+    for (let i = 0; i < links.length; i++) {
+      let obj = links[i];
+      let div = createButton(obj[1].href, obj[0]);
+      endpointContainer.append(div);
+    }
+  }
+
+  function createButton(linkToRes, name) {
+    if (linkToRes.includes("{")) {
+      return createToggle(linkToRes, name);
+    } else {
+      return getLink(linkToRes, name);
+    }
+  }
+
+  function getLink(linkToRes, name) {
+    let newDiv = document.createElement("div");
+    newDiv.classList = ("p-3 w-25");
+    let link = document.createElement("a")
+    link.href = linkToRes;
+    let button = document.createElement("button");
+    button.innerHTML = translate(name);
+    button.classList = "btn btn-primary btn-block";
+    link.append(button)
+    newDiv.append(link);
+    return newDiv
+  }
+
+  function createToggle(linkToRes, name) {
+    let newDiv = document.createElement("div");
+    newDiv.classList = ("p-3 w-25");
+    let button = document.createElement("button");
+    button.classList = "btn btn-info btn-block";
+    button.innerHTML = translate(name);
+    button.link = linkToRes;
+    button.addEventListener("click", getPossibilities);
+    newDiv.append(button);
+    return newDiv;
+  }
+
+  async function getPossibilities() {
+    let link = this.link.substr(0, this.link.indexOf("{"));
+    let responce = await fetch(link);
+    let result = await responce.json();
+    if (link.includes("env")) {
+      getEnvLinks(result,link);
+    } else if (link.includes("metrics")) {
+      getMetricsLinks(result,link);
+    } else if (link.includes("health")) {
+      getHealthLinks(result,link);
+    }
+
+  }
+
+  function getEnvLinks(result,link) {
+    let parent = document.getElementById("env");
+    if (parent.childElementCount > 0) {
+      while (parent.childElementCount != 0) {
+        parent.removeChild(parent.childNodes[0]);
+      }
+    } else {
+      let headline = document.createElement("h3");
+      headline.classList = "m-5 text-light";
+      headline.innerHTML = "Possible enviroments zu inspect:"
+      parent.append(headline);
+      let content = document.createElement("div");
+      for (let srcName in result["propertySources"]) {
+        for (envName in result["propertySources"][srcName]["properties"]) {
+          let newDiv = document.createElement("div");
+          let resLink = document.createElement("a");
+          resLink.href = link + envName;
+          resLink.innerHTML = envName;
+          newDiv.append(resLink);
+          parent.append(newDiv);
+        }
+      }
+      parent.append(content);
+    }
+  }
+
+  function getMetricsLinks(result,link) {
+    let parent = document.getElementById("metrics");
+    if (parent.childElementCount > 0) {
+      while (parent.childElementCount != 0) {
+        parent.removeChild(parent.childNodes[0]);
+      }
+    } else {
+      let headline = document.createElement("h3");
+      headline.classList = "m-5 text-light";
+      headline.innerHTML = "Possible metrics zu inspect:"
+      parent.append(headline);
+      let content = document.createElement("div");
+      for (let i = 0; i < result["names"].length; i++) {
+        let newDiv = document.createElement("div");
+        let resLink = document.createElement("a");
+        resLink.href = link + result["names"][i];
+        resLink.innerHTML = result["names"][i];
+        newDiv.append(resLink);
+        parent.append(newDiv);
+      }
+      parent.append(content);
+    }
+  }
+
+  function translate(name) {
+    name = name.replace("-", "_")
+    let dic = {};
+    dic.self = "Actuator";
+    dic.health = "Health";
+    dic.health_path = "Health-Paths";
+    dic.info = "Info";
+    dic.env = "Enviroment";
+    dic.env_toMatch = "Enviroment-Paths";
+    dic.logfile = "Log File";
+    dic.metrics = "Metrics";
+    dic.metrics_requiredMetricName = "Metrics-Paths";
+    dic.scheduledtasks = "Schedule-Tasks";
+    dic.httptrace = "HttpTrace";
+    dic.mappings = "Mappings";
+    return dic[name];
+  }
+
+</script>
+</html>

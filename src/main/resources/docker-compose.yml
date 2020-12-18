@@ -1,0 +1,17 @@
+version: '2'
+
+# Example docker-compose.yml
+services:
+  kim-kas:
+    image: "de.gematik/kim.kas:1.0.0"
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - /opt/kimkas:/opt/kimkas:rw
+    environment:
+      - gematik.kim.kas.max-mail-size=524288000
+      - gematik.kim.kas.storage-path=/opt/kimkas/storage/
+      - gematik.kim.kas.database-file=/opt/kimkas/kasdb
+      - gematik.kim.kas.host=my-kas.test
+      - gematik.kim.kas.endpoints-exposure=httptrace,env,logfile,scheduledtasks,mappings,health,info,metrics
