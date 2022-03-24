@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2020 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -16,104 +16,200 @@
 
 package de.gematik.kim.kas.api;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import de.gematik.kim.kas.controller.FileController;
-import de.gematik.kim.kas.controller.MaxMailSizeController;
-import de.gematik.kim.kas.controller.UrlController;
+import de.gematik.kim.kas.configs.InterceptorConfig;
 import de.gematik.kim.kas.exceptions.CouldNotSaveException;
+import de.gematik.kim.kas.exceptions.FileToLargeException;
+import de.gematik.kim.kas.exceptions.TimeParseException;
+import de.gematik.kim.kas.filter.BaseAuthFilter;
+import de.gematik.kim.kas.service.FileLoadService;
+import de.gematik.kim.kas.service.FileSaveService;
+import de.gematik.kim.kas.service.cron.AccessChecker;
+import de.gematik.kim.kas.service.cron.DeleteFileJob;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.expression.AccessException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-@RunWith(SpringRunner.class)
 @Slf4j
+@ExtendWith(SpringExtension.class)
 @WebMvcTest(KasApiRestController.class)
-public class KasApiRestControllerTest {
+class KasApiRestControllerTest {
 
-    @MockBean
-    private MaxMailSizeController maxMailSizeController;
-    @MockBean
-    private FileController fileController;
-    @MockBean
-    private UrlController urlController;
-    @Autowired
-    private MockMvc mvc;
+  public static final String RECIPIENT = "SomeRecipient@gematik.de";
+  public static final String RECIPIENTS_HEADER = "recipient";
+  @Value("${gematik.kim.kas.version}")
+  public String VERSION;
+  @Value("${gematik.kim.kas.path-prefix}")
+  private String prefix;
 
-    @Test
-    public void callMaxMailSizeRestInterfaceAndCheckValueCorrect() throws Exception {
-        Long expectedSize = 12345L;
-        when(maxMailSizeController.getMaxMailSize()).thenReturn(expectedSize);
+  @MockBean
+  private DeleteFileJob deleteFileJob;
+  @MockBean
+  private InterceptorConfig interceptorConfig;
+  @MockBean
+  private BaseAuthFilter baseAuthFilter;
+  @MockBean
+  private FileSaveService fileSaveService;
+  @MockBean
+  private FileLoadService fileLoadService;
+  @MockBean
+  private AccessChecker accessChecker;
+  @Autowired
+  private MockMvc mvc;
 
-        mvc.perform(get("/v1.1/MaxMailSize"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.MaxMailSize").value(expectedSize));
-    }
+  @BeforeEach
+  public void prepare() {
+    when(accessChecker.check(any())).thenReturn(true);
+  }
 
-    @Test
-    public void addFileToStorageAndExpectIsCreated() throws Exception {
-        byte[] fileData = "Something-with-sense".getBytes();
-        String uuid = "Some-UUID";
-        when(fileController.storeFile(eq(fileData))).thenReturn(uuid);
-        when(urlController.getFullUrl(uuid, false)).thenReturn("http://localhost:8080/v1.1/" + uuid);
-        mvc.perform(post("/v1.1/").content(fileData))
-                .andExpect(status().isCreated())
-                .andExpect(content().string("{\"Shared-Link\":\"http://localhost:8080/v1.1/" + uuid + "\"}"));
-    }
 
-    @Test
-    public void fullStorageAndExpectInternalServerError() throws Exception {
-        byte[] fileData = "Something-with-sense".getBytes();
-        when(fileController.storeFile(eq(fileData))).thenThrow(new CouldNotSaveException("Not enough space on disk"));
-        mvc.perform(post("/v1.1/").content(fileData))
-                .andExpect(status().isInternalServerError());
-    }
+  @Test
+  void addFileToStorageAndExpectIsCreated() throws Exception {
+    byte[] fileData = "Something-with-sense".getBytes();
+    String uuid = "Some-UUID";
+    when(fileSaveService.saveFile(any(), any(), any(), any())).thenReturn(
+        "http://localhost:8080/" + prefix + "/" + VERSION + "/attachment/" + uuid);
 
-    @Test
-    public void uploadEmptyFileAndExpectBadRequest() throws Exception {
-        mvc.perform(post("/v1.1/")).andExpect(status().isBadRequest());
-    }
+    mvc.perform(multipart("/" + prefix + "/" + VERSION + "/attachment")
+            .file("attachment", fileData)
+            .header("authorization", "Basic " + new String(
+                Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE))
+        .andExpect(status().isCreated())
+        .andExpect(content().string(
+            "{\"sharedLink\":\"http://localhost:8080/" + prefix + "/" + VERSION + "/attachment/"
+                + uuid + "\"}"));
+  }
 
-    @Test
-    public void downloadFileAndExpectOk() throws Exception {
-        File f = new File(
-                "." + File.separator + "src" + File.separator + "test" + File.separator + "resources" + File.separator
-                        + "Test.txt");
-        when(fileController.getFile("Test")).thenReturn(f);
-        MvcResult result = mvc.perform(get("/v1.1/Test")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM))
-                .andReturn();
-        assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus());
-        assertEquals(25, result.getResponse().getContentAsByteArray().length);
-        assertEquals(MediaType.APPLICATION_OCTET_STREAM_VALUE, result.getResponse().getContentType());
-        assertEquals("This is just a test file!", result.getResponse().getContentAsString());
-    }
 
-    @Test
-    public void tryDownloadNotExistingFileAndExpectNotFound() throws Exception {
-        when(fileController.getFile("NonExistingFile"))
-                .thenThrow(new FileNotFoundException("The requested file does not exist."));
-        MvcResult result = mvc.perform(get("/NonExistingFile")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM))
-                .andReturn();
-        assertEquals(HttpStatus.NOT_FOUND.value(), result.getResponse().getStatus());
-    }
+  @Test
+  void fullStorageAndExpectInternalServerError() throws Exception {
+    byte[] fileData = "Something-with-sense".getBytes();
+    when(fileSaveService.saveFile(any(), any(), any(), any())).thenThrow(
+        new CouldNotSaveException("Not enough space on disk"));
+
+    mvc.perform(multipart("/" + prefix + "/" + VERSION + "/attachment")
+            .file("attachment", fileData)
+            .header("authorization", "Basic " + new String(
+                Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE))
+        .andExpect(status().isInternalServerError());
+  }
+
+  @Test
+  void fileToBigAndExpectPayloadToLarge() throws Exception {
+    byte[] fileData = "Something-with-sense".getBytes();
+    when(fileSaveService.saveFile(any(), any(), any(), any())).thenThrow(
+        new FileToLargeException("File to large"));
+
+    mvc.perform(multipart("/" + prefix + "/" + VERSION + "/attachment")
+            .file("attachment", fileData)
+            .header("authorization", "Basic " + new String(
+                Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE))
+        .andExpect(status().isPayloadTooLarge());
+  }
+
+
+  @Test
+  void uploadEmptyFileAndExpectBadRequest() throws Exception {
+    when(fileSaveService.saveFile(any(), any(), any(), any())).thenThrow(
+        new IllegalArgumentException("No data found"));
+    mvc.perform(post("/" + prefix + "/" + VERSION + "/attachment")
+            .header("authorization", "Basic " + new String(
+                Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void invalidTimeAndExpectBadRequest() throws Exception {
+    when(fileSaveService.saveFile(any(), any(), any(), any())).thenThrow(
+        new TimeParseException("Problem with parsing expiry date"));
+    mvc.perform(post("/" + prefix + "/" + VERSION + "/attachment")
+            .header("authorization", "Basic " + new String(
+                Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void downloadFileAndExpectOk() throws Exception {
+    File f = new File(
+        "." + File.separator + "src" + File.separator + "test" + File.separator + "resources"
+            + File.separator
+            + "Test.txt");
+    when(fileLoadService.loadFile(eq("Test"), any())).thenReturn(f);
+
+    MvcResult result = mvc.perform(get("/" + prefix + "/" + VERSION + "/attachment/" + "Test")
+            .header("authorization", "Basic " + new String(
+                Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE)
+            .header(RECIPIENTS_HEADER, RECIPIENT))
+        .andReturn();
+    assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus());
+    assertEquals(25, result.getResponse().getContentAsByteArray().length);
+    assertEquals("This is just a test file!", result.getResponse().getContentAsString());
+  }
+
+  @Test
+  void tryDownloadNotExistingFileAndExpectNotFound() throws Exception {
+    when(fileLoadService.loadFile(eq("NonExistingFile"), any()))
+        .thenThrow(new FileNotFoundException("The requested file does not exist."));
+
+    MvcResult result = mvc.perform(
+            get("/" + prefix + "/" + VERSION + "/attachment/NonExistingFile")
+                .header("authorization", "Basic " + new String(
+                    Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE)
+                .header(RECIPIENTS_HEADER, RECIPIENT))
+        .andReturn();
+    assertEquals(HttpStatus.NOT_FOUND.value(), result.getResponse().getStatus());
+  }
+
+  @Test
+  void tryDownloadFileWithNotValidRecipientAndExpectUnauthorized() throws Exception {
+    File f = new File(
+        "." + File.separator + "src" + File.separator + "test" + File.separator + "resources"
+            + File.separator
+            + "Test.txt");
+    when(fileLoadService.loadFile(eq("Test"), any())).thenThrow(
+        new AccessException("Mail ist not allowed"));
+
+    mvc.perform(get("/" + prefix + "/" + VERSION + "/attachment/" + "Test")
+            .header("authorization", "Basic " + new String(
+                Base64.getEncoder().encode("username:password".getBytes(StandardCharsets.UTF_8))))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE)
+            .header(RECIPIENTS_HEADER, RECIPIENT))
+        .andExpect(status().isUnauthorized())
+        .andExpect(content().string("{\"message\":\"Mail ist not allowed\"}"));
+  }
+
 
 }
+

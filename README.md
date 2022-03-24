@@ -6,14 +6,15 @@
 
 #### Commands
 
-With the `spring-boot-maven-plugin` it is possible to generate a docker image out of the box.
+To run the application locally (HTTP only) by its own, run:
 
-    mvn spring-boot:build-image
+    $ mvn spring-boot:run
 
-The image will be available with name kim-kas.
-To run it use this command:
+To build the Kas-Dockerimage, run:
 
-    docker run --name kas -p 81:8080 -d kim-kas
+    $ mvn spring-boot:build-image
+
+To build the image with a proxy, set your proxy in pom.xml under plugins → `spring-boot-maven-plugin`.
 
 #### Need
 
@@ -27,54 +28,61 @@ Parameters can be set by using the `-e <PARAMETER_NAME>=<VALUE>`
 
 Example:
 
-    docker run --name kas -p 81:8080 -d gematik.kim.kas.maxMailSize=30776 -e kim-kas
+    $ docker run --name kas -p 81:8080 -d gematik.kim.kas.maxMailSize=30776 -e kim-kas
 
 ## Parameters
 
-**List of parameters:**
+**List of parameters:.**
 
 All Parameters start with `gematik.kim.kas.`
 
 <table>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;"><p>PARAMATER_NAME</p></td>
-<td style="text-align: left;"><p>Description</p></td>
-<td style="text-align: left;"><p>Default</p></td>
+<td><p>PARAMATER_NAME</p></td>
+<td><p>Description</p></td>
+<td><p>Default</p></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><p>maxMailSize</p></td>
-<td style="text-align: left;"><p>Maximal allowed size of an e-mail</p></td>
-<td style="text-align: left;"><p>524288000</p></td>
+<td><p>maxMailSize</p></td>
+<td><p>Maximal allowed size of an e-mail.
+If size is greater than 4G the nginx parameter <code>client_max_body_size</code> must be increased as well.</p></td>
+<td><p>524288000</p></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;"><p>storagePath</p></td>
-<td style="text-align: left;"><p>Path to volume where attachments got stored</p></td>
-<td style="text-align: left;"><p>./target/storage</p></td>
+<td><p>storagePath</p></td>
+<td><p>Path to volume where attachments got stored</p></td>
+<td><p>./target/storage</p></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><p>logDir</p></td>
-<td style="text-align: left;"><p>Path to logfile</p></td>
-<td style="text-align: left;"><p>./target/logs</p></td>
+<td><p>logDir</p></td>
+<td><p>Path to logfile</p></td>
+<td><p>./target/logs</p></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;"><p>data_base_location</p></td>
-<td style="text-align: left;"><p>Path to database storage</p></td>
-<td style="text-align: left;"><p>./target/db/demo</p></td>
+<td><p>data_base_location</p></td>
+<td><p>Path to database storage</p></td>
+<td><p>./target/db/demo</p></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><p>hostUrl</p></td>
-<td style="text-align: left;"><p>The main URL to be returned by storage calls</p></td>
-<td style="text-align: left;"><p>localhost</p></td>
+<td><p>http-port</p></td>
+<td><p>Port used by the application</p></td>
+<td><p>8080</p></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;"><p>protocol</p></td>
-<td style="text-align: left;"><p>The used protocol (Slashes needed)</p></td>
-<td style="text-align: left;"><p>https://</p></td>
+<td><p>swagger-ui-base-addr</p></td>
+<td><p>Base URLs used by the swagger ui, separated by a comma</p></td>
+<td><p><a href="https://localhost:8443,http://localhost:8080">https://localhost:8443,http://localhost:8080</a></p></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><p>cleantime</p></td>
-<td style="text-align: left;"><p>Scheduled time for cronjob. The fields read from left to right are interpreted as follows:</p>
+<td><p>use-first-swagger-base-ui-addr-for-add-attachment</p></td>
+<td><p>If set to true, the <code>addAttachment</code> method will use the first entry of <code>swagger-ui-base-addr</code> in its answer, otherwise the requesting address or <strong>X-Forward</strong> header us used</p></td>
+<td><p>false</p></td>
+</tr>
+<tr class="odd">
+<td><p>cleantime</p></td>
+<td><p>Scheduled time for cronjob.
+The fields read from left to right are interpreted as follows:</p>
 <ul>
 <li><p>Second</p></li>
 <li><p>Minute</p></li>
@@ -84,42 +92,18 @@ All Parameters start with `gematik.kim.kas.`
 <li><p>Day of week</p></li>
 </ul>
 <p>Full documentation <a href="https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/scheduling/annotation/Scheduled.html">here</a>.</p></td>
-<td style="text-align: left;"><p>0 0 3 * * *</p></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><p>keepFileTime</p></td>
-<td style="text-align: left;"><p>Time a file remains in system in milliseconds</p></td>
-<td style="text-align: left;"><p>7776000000 (90 days)</p></td>
+<td><p>0 0 3 * * * (daily at 3 am)</p></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><p>keepIdTime</p></td>
-<td style="text-align: left;"><p>Time UUI is unique in milliseconds</p></td>
-<td style="text-align: left;"><p>31536000000 (1 year)</p></td>
+<td><p>keepIdTime</p></td>
+<td><p>Time UUI is unique in milliseconds</p></td>
+<td><p>31536000000 (1 year)</p></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;"><p>storeType</p></td>
-<td style="text-align: left;"><p>Name of the key-store-type</p></td>
-<td style="text-align: left;"><p>PKCS12</p></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"><p>certPath</p></td>
-<td style="text-align: left;"><p>Path to certificate. Shows to self-signed example certificate. Default is set to RSA-Certificate. If KAS should run on ECC enter
-<code>classpath:keystore/ecc/kas.gem.kim.telematik-test-ECC.p12</code></p></td>
-<td style="text-align: left;"><p>classpath:keystore/rsa/kas.gem.kim.telematik-test.p12</p></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><p>pw</p></td>
-<td style="text-align: left;"><p>Password of the certificate</p></td>
-<td style="text-align: left;"><p>00</p></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"><p>tsl</p></td>
-<td style="text-align: left;"><p>Should server start with https</p></td>
-<td style="text-align: left;"><p>true</p></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><p>endpoints</p></td>
-<td style="text-align: left;"><p>All these parameters can be used separately. To use more than one, provide them comma separated. The resource can be entered by &lt;host&gt;&lt;port&gt;/v1.1/actuator/&lt;resource_name&gt;</p>
+<td><p>endpoints</p></td>
+<td><p>All these parameters can be used separately.
+To use more than one, provide them comma separated.
+The resource can be entered by <code>&lt;host&gt;&lt;port&gt;/attachments/v2.2/actuator/&lt;resource_name&gt;</code></p>
 <p><strong>Please do not use this options in productive environment!</strong></p>
 <ul>
 <li><p>httptrace → Showing the http requests and corresponding answers (Just in memory and limited by the capacity)</p></li>
@@ -129,12 +113,59 @@ All Parameters start with `gematik.kim.kas.`
 <li><p>mappings → Shows all accessible endpoints</p></li>
 <li><p>health → Shows status of the server</p></li>
 </ul></td>
-<td style="text-align: left;"><p>NONE</p></td>
+<td><p>NONE</p></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><p>http_log_capacity</p></td>
-<td style="text-align: left;"><p>Amount of saved http requests and responses in memory and displayed by <code>httptrace</code> - endpoint</p></td>
-<td style="text-align: left;"><p>500</p></td>
+<td><p>http_log_capacity</p></td>
+<td><p>Amount of saved http requests and responses in memory and displayed by <code>httptrace</code> - endpoint</p></td>
+<td><p>500</p></td>
+</tr>
+<tr class="odd">
+<td><p>version</p></td>
+<td><p>Version of the KAS.
+This have an effect of the url!</p></td>
+<td><p>v2.2</p></td>
+</tr>
+<tr class="even">
+<td><p>kim-am-url</p></td>
+<td><p>The location of the accountmanager for the basic auth authorization</p></td>
+<td><p><a href="http://localhost:8082">http://localhost:8082</a></p></td>
+</tr>
+<tr class="odd">
+<td><p>use-auth-initial</p></td>
+<td><p>Switch if basicAuth should be used.
+This can be switched of via the <code>/switchAuth</code> api for developing reasons</p></td>
+<td><p>true</p></td>
 </tr>
 </tbody>
 </table>
+
+## cURL examples
+
+To upload a file **data.file** use the POST method:
+
+    $ curl -k -X POST https://localhost:8443/attachments/v2.2/attachment -H "Content-Type: application/octet-stream" --data-binary @data.file
+    {"Shared-Link":"https://localhost:8443/attachments/v2.2/attachment/469bf002-701f-4362-a9bc-6585c1871250"}
+
+The result of this call can be used to download into the file **download.file**:
+
+    $ curl -k -X GET https://localhost:8443/attachments/v2.2/attachmenthttps://localhost:8443/attachments/v2.2/attachment/469bf002-701f-4362-a9bc-6585c1871250 -o download.file
+
+## TLS - Hints
+
+KAS delivers a HTTPS connection with TLS 1.2 and an RSA and brainpool ECC key that are compliment to Gematik specs.
+
+To use modern OpenSSL with the TLS-ECC brainpool, you have explicit use brainpool curve, e.g.:
+
+    $ openssl s_client -connect localhost:8443 \
+       -curves brainpoolP256r1 \
+       -CAfile GEM.RCA3-TEST-ONLY.pem \
+       -cert mailuser-ecc.pem \
+       -key mailuser-ecc.prv.pem
+
+Without a parameter RSA is used, e.g.,
+
+    $ openssl s_client -connect localhost:8443 \
+       -CAfile GEM.RCA2-TEST-ONLY.pem \
+       -cert mailuser-rsa1.pem \
+       -key mailuser-rsa1.prv.pem

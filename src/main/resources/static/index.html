@@ -4,10 +4,14 @@
   <meta charset="UTF-8">
   <title>Kas</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="icon" href="KIM-KAS.png">
 </head>
 <body class="bg-dark">
 <div class="container text-light">
-  <h1 class="m-5">Hello to KAS</h1>
+  <div class="row m-5">
+    <img src="KIM-KAS.png" alt="KIM-KAS logo" style="max-height: 120px;max-width: 120px">
+    <h1 class="ml-4" style="margin-top: auto;margin-bottom: auto">Hello to KAS</h1>
+  </div>
 </div>
 
 <div class="container text-light">
@@ -40,12 +44,7 @@
   getEndpoints().then(res => showLinks(res));
 
   async function getEndpoints() {
-    let response;
-    try{
-      response = await fetch("https://localhost:8443/actuator");
-    } catch (e){
-      response = await fetch("http://localhost:8080/actuator");
-    }
+    let response = await fetch("/actuator");
     let result = await response.json();
     let links = Object.entries(result._links);
     return links
@@ -99,16 +98,16 @@
     let responce = await fetch(link);
     let result = await responce.json();
     if (link.includes("env")) {
-      getEnvLinks(result,link);
+      getEnvLinks(result, link);
     } else if (link.includes("metrics")) {
-      getMetricsLinks(result,link);
+      getMetricsLinks(result, link);
     } else if (link.includes("health")) {
-      getHealthLinks(result,link);
+      getHealthLinks(result, link);
     }
 
   }
 
-  function getEnvLinks(result,link) {
+  function getEnvLinks(result, link) {
     let parent = document.getElementById("env");
     if (parent.childElementCount > 0) {
       while (parent.childElementCount != 0) {
@@ -134,7 +133,7 @@
     }
   }
 
-  function getMetricsLinks(result,link) {
+  function getMetricsLinks(result, link) {
     let parent = document.getElementById("metrics");
     if (parent.childElementCount > 0) {
       while (parent.childElementCount != 0) {

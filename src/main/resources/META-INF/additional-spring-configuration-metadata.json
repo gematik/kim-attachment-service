@@ -1,78 +1,79 @@
 {
-    "properties": [
-        {
-            "name": "gematik.kim.kas.max-mail-size",
-            "type": "java.lang.String",
-            "description": "Setting the answer to the MaxMailSize endpoint."
-        },
-        {
-            "name": "gematik.kim.kas.storage-path",
-            "type": "java.lang.String",
-            "description": "Path where the documents are stored."
-        },
-        {
-            "name": "gematik.kim.kas.database-file",
-            "type": "java.lang.String",
-            "description": "Path to file where the database should be stored."
-        },
-        {
-            "name": "gematik.kim.kas.http-log-capacity",
-            "type": "java.lang.Long",
-            "description": "Maxium number of lines to store http log."
-        },
-        {
-            "name": "gematik.kim.kas.host",
-            "type": "java.lang.String",
-            "description": "Host name of the service."
-        },
-        {
-            "name": "gematik.kim.kas.cleantime",
-            "type": "java.lang.String",
-            "description": "Scheduled time as cron config string when the DeleteFileJob is run."
-        },
-        {
-            "name": "gematik.kim.kas.time-to-keep-file",
-            "type": "java.lang.Long",
-            "description": "Time in seconds how long stored files should be kept."
-        },
-        {
-            "name": "gematik.kim.kas.time-to-keep-id",
-            "type": "java.lang.Long",
-            "description": "Time in seconds how long genered ids should be checked not be be produced again."
-        },
-        {
-            "name": "gematik.kim.kas.logging-path",
-            "type": "java.lang.String",
-            "description": "Path of folder where the log files are stored."
-        },
-        {
-            "name": "gematik.kim.kas.endpoints-exposure",
-            "type": "java.lang.String",
-            "description": "List of exposed actuator endpoints."
-        },
-        {
-            "name": "gematik.kim.kas.https-port",
-            "type": "java.lang.Integer",
-            "description": "Setting https port for rest interface."
-        },
-        {
-            "name": "gematik.kim.kas.key-store-type",
-            "type": "java.lang.String",
-            "description": "Type of the provided keystore."
-        },
-        {
-            "name": "gematik.kim.kas.key-store",
-            "type": "java.lang.String",
-            "description": "Path of the keystore to use for https."
-        },
-        {
-            "name": "gematik.kim.kas.key-store-password",
-            "type": "java.lang.String",
-            "description": "Password of the keystore."
-        },
-        {
-            "name": "gematik.kim.kas.http-port",
-            "type": "java.lang.Integer",
-            "description": "Port for addtionial http port."
-        }
-    ] }
+  "properties": [
+    {
+      "name": "gematik.kim.kas.max-mail-size",
+      "type": "java.lang.String",
+      "description": "Setting the answer to the MaxMailSize endpoint."
+    },
+    {
+      "name": "gematik.kim.kas.storage-path",
+      "type": "java.lang.String",
+      "description": "Path where the documents are stored."
+    },
+    {
+      "name": "gematik.kim.kas.database-file",
+      "type": "java.lang.String",
+      "description": "Path to file where the database should be stored."
+    },
+    {
+      "name": "gematik.kim.kas.http-log-capacity",
+      "type": "java.lang.Long",
+      "description": "Maxium number of lines to store http log."
+    },
+    {
+      "name": "gematik.kim.kas.cleantime",
+      "type": "java.lang.String",
+      "description": "Scheduled time as cron config string when the DeleteFileJob is run."
+    },
+    {
+      "name": "gematik.kim.kas.time-to-keep-file",
+      "type": "java.lang.Long",
+      "description": "Time in seconds how long stored files should be kept."
+    },
+    {
+      "name": "gematik.kim.kas.time-to-keep-id",
+      "type": "java.lang.Long",
+      "description": "Time in seconds how long genered ids should be checked not be be produced again."
+    },
+    {
+      "name": "gematik.kim.kas.logging-path",
+      "type": "java.lang.String",
+      "description": "Path of folder where the log files are stored."
+    },
+    {
+      "name": "gematik.kim.kas.endpoints-exposure",
+      "type": "java.lang.String",
+      "description": "List of exposed actuator endpoints."
+    },
+    {
+      "name": "gematik.kim.kas.http-port",
+      "type": "java.lang.Integer",
+      "description": "Port for http port."
+    },
+    {
+      "name": "gematik.kim.kas.swagger-ui-base-addr",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Endpoint address used for swagger ui."
+    },
+    {
+      "name": "gematik.kim.kas.use-first-swagger-base-ui-addr-for-add-attachment",
+      "type": "java.lang.Boolean",
+      "description": "If value of swagger-ui-addr should be always used for the answer of the add_Attachment method."
+    },
+    {
+      "name": "gematik.kim.kas.version",
+      "type": "java.lang.String",
+      "description": "Version for the path of the endpoints."
+    },
+    {
+      "name": "gematik.kim.kas.kim-am-url",
+      "type": "java.lang.String",
+      "description": "URL endpoint for the authentication."
+    },
+    {
+      "name": "gematik.kim.kas.max-attachment-requests",
+      "type": "java.lang.Integer",
+      "description": "Setting the maximum number of requests per user for one attachment."
+    }
+  ]
+}

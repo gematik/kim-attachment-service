@@ -16,5 +16,7 @@ bin/
 ### Maven ###
 target/*
 /target/
-
+Jenkinsfile
+Jenkinsfile_Release
+Jenkinsfile_Github_Release
 

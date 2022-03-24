@@ -1,0 +1,123 @@
+openapi: 3.0.0
+info:
+  title: KIM-AM for KIM-KAS API
+  description: Account-Manager-REST-API für den KIM Attachment Service
+  version: 1.0.0
+paths:
+  /auth/basic:
+    post:
+      tags:
+        - "KasAuth"
+      summary: User Authentication
+      description: Checks with KIM-AM if the user is authorized
+      operationId: basicAuth
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Access forbidden for user
+        '404':
+          description: User not found
+  /quota:
+    post:
+      tags:
+        - "KasAuth"
+      summary: Add Resource
+      description: Check if remaining quota is sufficient to add resource and add resource to quota
+      operationId: addResource
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                size:
+                  type: string
+              required:
+                - username
+                - size
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemainingQuotaInfo'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotaErrorResponse'
+        '404':
+          description: User not found
+        '507':
+          description: Not enough remaining storage to add resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemainingQuotaInfo'
+  /quota/release:
+    post:
+      tags:
+        - "KasAuth"
+      summary: Release Resource
+      description: Update currently used space for a user after release of a resource
+      operationId: releaseResource
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                currentlyUsedSpace:
+                  type: string
+              required:
+                - username
+                - currentlyUsedSpace
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemainingQuotaInfo'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotaErrorResponse'
+        '404':
+          description: User not found
+components:
+  schemas:
+    RemainingQuotaInfo:
+      type: object
+      properties:
+        remainingQuota:
+          type: integer
+          format: int64
+    QuotaErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
